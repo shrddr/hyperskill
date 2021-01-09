@@ -24,6 +24,16 @@ if __name__ == '__main__':
     Session = sessionmaker(bind=engine)
     sess = Session()
 
+    def print_rows(rows, emptymessage, dates=False):
+        for i, r in enumerate(rows, 1):
+            s = f"{i}. {r.task}"
+            if dates:
+                month = datetime.strftime(r.deadline, "%b")
+                s += f". {r.deadline.day} {month}"
+            print(s)
+        if not rows:
+            print(emptymessage)
+        print('')
 
     def get_tasks(day, today=False):
 
@@ -34,16 +44,11 @@ if __name__ == '__main__':
             print(datetime.strftime(day, "%A %d %b:"))
 
         rows = sess.query(Record).filter(Record.deadline == day.date()).all()
-
-        for i, r in enumerate(rows, 1):
-            print(f"{i}. {r.task}")
-        if not rows:
-            print("Nothing to do!")
-        print('')
+        print_rows(rows, "Nothing to do!")
 
 
     while True:
-        print("1) Today's tasks\n2) Week's tasks\n3) All tasks\n4) Add task\n0) Exit")
+        print("1) Today's tasks\n2) Week's tasks\n3) All tasks\n4) Missed tasks\n5) Add task\n6) Delete task\n0) Exit")
         cmd = int(input())
         if not cmd:
             break
@@ -61,15 +66,15 @@ if __name__ == '__main__':
         if cmd == 3:
             print("All tasks:")
             rows = sess.query(Record).order_by(Record.deadline).all()
-
-            for i, r in enumerate(rows, 1):
-                month = datetime.strftime(r.deadline, "%b")
-                print(f"{i}. {r.task}. {r.deadline.day} {month}")
-
-            if not rows:
-                print("Nothing to do!")
+            print_rows(rows, "Nothing to do!", True)
 
         if cmd == 4:
+            print("Missed tasks:")
+            today = datetime.today().date()
+            rows = sess.query(Record).filter(Record.deadline < today).order_by(Record.deadline).all()
+            print_rows(rows, "Nothing is missed!")
+
+        if cmd == 5:
             print("Enter task")
             text = input()
             print("Enter deadline")
@@ -79,3 +84,13 @@ if __name__ == '__main__':
             sess.add(new_row)
             sess.commit()
 
+        if cmd == 6:
+            print("Choose the number of the task you want to delete:")
+            rows = sess.query(Record).order_by(Record.deadline).all()
+            print_rows(rows, "Nothing to delete", True)
+
+            n = int(input())
+            target_row = rows[n-1]
+            sess.delete(target_row)
+            sess.commit()
+            print("The task has been deleted!\n")
