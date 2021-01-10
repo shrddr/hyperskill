@@ -113,15 +113,42 @@ def ai_move(b):
             return b.state()
 
 
-b = Board()
-print(b)
+def play(px, po):
+    b = Board()
+    print(b)
 
-while True:
-    if b.is_x_move():
-        state = human_move(b)
-    else:
-        state = ai_move(b)
+    fx = human_move
+    if px == 'easy':
+        fx = ai_move
 
-    if state != "Game not finished":
-        print(state)
-        break
+    fo = human_move
+    if po == 'easy':
+        fo = ai_move
+
+    while True:
+        if b.is_x_move():
+            state = fx(b)
+        else:
+            state = fo(b)
+
+        if state != "Game not finished":
+            print(state)
+            break
+
+
+if __name__ == "__main__":
+    while True:
+        print("Input command:")
+        text = input()
+        if text == 'exit':
+            break
+
+        try:
+            cmd, px, po = text.split()
+        except ValueError:
+            print('Bad parameters!')
+            continue
+        if cmd == "start" and px in ['user', 'easy'] and po in ['user', 'easy']:
+            play(px, po)
+            continue
+        print('Bad parameters!')
