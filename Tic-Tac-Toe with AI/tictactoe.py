@@ -1,17 +1,22 @@
+import random
+
 
 class Board:
     size = 3
 
-    def __init__(self, text):
-        self.data = []
-        if len(text) != self.size * self.size:
-            raise ValueError
-        for c in text:
-            if c in ['_', 'O', 'X']:
-                self.data.append(c)
-            else:
+    def __init__(self, text=None):
+        if text:
+            self.data = []
+            if len(text) != self.size * self.size:
                 raise ValueError
-        self.data = [self.data[self.size * i:self.size * (i + 1)] for i in range(self.size)]
+            for c in text:
+                if c in ['_', 'O', 'X']:
+                    self.data.append(c)
+                else:
+                    raise ValueError
+            self.data = [self.data[self.size * i:self.size * (i + 1)] for i in range(self.size)]
+        else:
+            self.data = [['_'] * self.size for _ in range(self.size)]
 
     def is_x_move(self):
         xs = 0
@@ -33,37 +38,28 @@ class Board:
 
     def state(self):
         for x in range(self.size):
-            is_x = [self.data[y][x] == 'X' for y in range(self.size)]
-            if all(is_x):
+            if all([self.data[y][x] == 'X' for y in range(self.size)]):
                 return "X wins"
-            is_o = [self.data[y][x] == 'O' for y in range(self.size)]
-            if all(is_o):
+            if all([self.data[y][x] == 'O' for y in range(self.size)]):
                 return "O wins"
 
         for y in range(self.size):
-            is_x = [self.data[y][x] == 'X' for x in range(self.size)]
-            if all(is_x):
+            if all([self.data[y][x] == 'X' for x in range(self.size)]):
                 return "X wins"
-            is_o = [self.data[y][x] == 'O' for x in range(self.size)]
-            if all(is_o):
+            if all([self.data[y][x] == 'O' for x in range(self.size)]):
                 return "O wins"
 
-        is_x = [self.data[x][x] == 'X' for x in range(self.size)]
-        if all(is_x):
+        if all([self.data[x][x] == 'X' for x in range(self.size)]):
             return "X wins"
-        is_x = [self.data[x][self.size-1-x] == 'X' for x in range(self.size)]
-        if all(is_x):
+        if all([self.data[x][self.size - 1 - x] == 'X' for x in range(self.size)]):
             return "X wins"
-        is_o = [self.data[x][x] == 'O' for x in range(self.size)]
-        if all(is_o):
+        if all([self.data[x][x] == 'O' for x in range(self.size)]):
             return "O wins"
-        is_o = [self.data[x][self.size-1-x] == 'O' for x in range(self.size)]
-        if all(is_o):
+        if all([self.data[x][self.size - 1 - x] == 'O' for x in range(self.size)]):
             return "O wins"
 
         for x in range(self.size):
-            free = [self.data[y][x] == '_' for y in range(self.size)]
-            if any(free):
+            if any([self.data[y][x] == '_' for y in range(self.size)]):
                 return "Game not finished"
 
         return "Draw"
@@ -71,12 +67,18 @@ class Board:
     def __str__(self):
         s = "---------\n"
         for y in range(self.size):
-            s += "| " + " ".join(self.data[y]) + " |\n"
-        s += "---------\n"
+            s += "| "
+            for x in range(self.size):
+                c = self.data[y][x]
+                if c == '_':
+                    c = ' '
+                s += c + " "
+            s += "|\n"
+        s += "---------"
         return s
 
 
-def ask_move(b):
+def human_move(b):
     while True:
         print("Enter the coordinates:")
         text = input()
@@ -94,19 +96,32 @@ def ask_move(b):
                 continue
             b.make_move(x, y)
             print(b)
-            print(b.state())
-            break
+            return b.state()
         except ValueError:
             print("You should enter numbers!")
             continue
 
 
-print("Enter the cells:")
-text = input()
-b = Board(text)
+def ai_move(b):
+    print('Making move level "easy"')
+    while True:
+        y = random.choice([0, 1, 2])
+        x = random.choice([0, 1, 2])
+        if b.is_empty(x, y):
+            b.make_move(x, y)
+            print(b)
+            return b.state()
+
+
+b = Board()
 print(b)
 
-ask_move(b)
+while True:
+    if b.is_x_move():
+        state = human_move(b)
+    else:
+        state = ai_move(b)
 
-
-
+    if state != "Game not finished":
+        print(state)
+        break
