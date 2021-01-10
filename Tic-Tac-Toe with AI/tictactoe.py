@@ -77,64 +77,106 @@ class Board:
         s += "---------"
         return s
 
-
-def human_move(b):
-    while True:
-        print("Enter the coordinates:")
-        text = input()
-        values = text.split(" ")
-        try:
-            y = int(values[0])
-            x = int(values[1])
-            if 1 > x or x > 3 or 1 > y or y > 3:
-                print("Coordinates should be from 1 to 3!")
+    def human_move(self):
+        while True:
+            print("Enter the coordinates:")
+            text = input()
+            values = text.split(" ")
+            try:
+                y = int(values[0])
+                x = int(values[1])
+                if 1 > x or x > 3 or 1 > y or y > 3:
+                    print("Coordinates should be from 1 to 3!")
+                    continue
+                x = x - 1
+                y = y - 1
+                if not self.is_empty(x, y):
+                    print("This cell is occupied! Choose another one!")
+                    continue
+                self.make_move(x, y)
+                print(self)
+                return self.state()
+            except ValueError:
+                print("You should enter numbers!")
                 continue
-            x = x - 1
-            y = y - 1
-            if not b.is_empty(x, y):
-                print("This cell is occupied! Choose another one!")
-                continue
-            b.make_move(x, y)
-            print(b)
-            return b.state()
-        except ValueError:
-            print("You should enter numbers!")
-            continue
+
+    def ai_move_easy(self):
+        print('Making move level "easy"')
+        while True:
+            y = random.choice([0, 1, 2])
+            x = random.choice([0, 1, 2])
+            if self.is_empty(x, y):
+                self.make_move(x, y)
+                print(self)
+                return self.state()
+
+    def ai_find_2row(self, c):
+        for x in range(self.size):
+            if [self.data[y][x] == c for y in range(self.size)].count(True) == 2:
+                for y in range(self.size):
+                    if self.data[y][x] != c:
+                        return x, y
+        for y in range(self.size):
+            if [self.data[y][x] == c for x in range(self.size)].count(True) == 2:
+                for x in range(self.size):
+                    if self.data[y][x] != c:
+                        return x, y
+        if [self.data[x][x] == c for x in range(self.size)].count(True) == 2:
+            for x in range(self.size):
+                if self.data[x][x] != c:
+                    return x, x
+        if [self.data[x][self.size - 1 - x] == c for x in range(self.size)].count(True) == 2:
+            for x in range(self.size):
+                if self.data[x][self.size - 1 - x] != c:
+                    return x, x
+        return None
+
+    def ai_move_medium(self):
+        print('Making move level "medium"')
+        my_char = 'X' if self.is_x_move() else 'O'
+        ret = self.ai_find_2row(my_char)
+        if ret:
+            self.make_move(*ret)
+
+        op_char = 'O' if my_char == 'X' else 'X'
+        ret = self.ai_find_2row(op_char)
+        if ret:
+            self.make_move(*ret)
+
+        while True:
+            y = random.choice([0, 1, 2])
+            x = random.choice([0, 1, 2])
+            if self.is_empty(x, y):
+                self.make_move(x, y)
+                print(self)
+                return self.state()
 
 
-def ai_move(b):
-    print('Making move level "easy"')
-    while True:
-        y = random.choice([0, 1, 2])
-        x = random.choice([0, 1, 2])
-        if b.is_empty(x, y):
-            b.make_move(x, y)
-            print(b)
-            return b.state()
-
-
-def play(px, po):
+def play(player_x, player_o):
     b = Board()
     print(b)
 
-    fx = human_move
-    if px == 'easy':
-        fx = ai_move
+    fx = b.human_move
+    if player_x == 'easy':
+        fx = b.ai_move_easy
 
-    fo = human_move
-    if po == 'easy':
-        fo = ai_move
+    fo = b.human_move
+    if player_o == 'easy':
+        fo = b.ai_move_easy
 
     while True:
         if b.is_x_move():
-            state = fx(b)
+            state = fx()
         else:
-            state = fo(b)
+            state = fo()
 
         if state != "Game not finished":
             print(state)
             break
 
+
+AI_MODES = ['easy', 'medium']
+MODES = ['user'] + AI_MODES
 
 if __name__ == "__main__":
     while True:
@@ -148,7 +190,7 @@ if __name__ == "__main__":
         except ValueError:
             print('Bad parameters!')
             continue
-        if cmd == "start" and px in ['user', 'easy'] and po in ['user', 'easy']:
+        if cmd == "start" and px in MODES and po in MODES:
             play(px, po)
             continue
         print('Bad parameters!')
