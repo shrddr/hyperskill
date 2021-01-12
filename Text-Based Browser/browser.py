@@ -1,14 +1,15 @@
 import os.path
 import argparse
 import requests
+from bs4 import BeautifulSoup
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("dir")
 args = argparser.parse_args()
 
 
-def display(url, dot_position):
-
+def display(url):
+    dot_position = cmd.find('.')
     filename = url[:dot_position]
     filepath = os.path.join(args.dir, filename)
 
@@ -19,7 +20,16 @@ def display(url, dot_position):
         if url[:8] != 'https://':
             url = 'https://' + url
         r = requests.get(url)
-        page = r.text
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        page = ""
+        supported_tags = ['li', 'p'] + [f'h{i}' for i in range(1, 7)]
+        for tag in supported_tags:
+            instances = soup.find_all(tag)
+            for instance in instances:
+                text = instance.text.strip()
+                if text:
+                    page += text + "\n"
 
         if not os.path.exists(args.dir):
             os.mkdir(args.dir)
@@ -31,10 +41,10 @@ def display(url, dot_position):
     print(page)
 
 
-
 history = []
 while True:
     cmd = input()
+
     if cmd == "exit":
         break
 
@@ -44,7 +54,7 @@ while True:
 
     dot_position = cmd.find('.')
     if dot_position >= 0:
-        display(cmd, dot_position)
+        display(cmd)
         history.append(cmd)
     else:
         print('Error: no dot')
