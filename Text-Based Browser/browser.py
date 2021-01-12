@@ -1,6 +1,7 @@
 import os.path
 import argparse
 import requests
+import colorama
 from bs4 import BeautifulSoup
 
 argparser = argparse.ArgumentParser()
@@ -27,9 +28,15 @@ def display(url):
         for tag in supported_tags:
             instances = soup.find_all(tag)
             for instance in instances:
-                text = instance.text.strip()
-                if text:
-                    page += text + "\n"
+                i_text = [s.strip() for s in instance.strings if s.strip()]
+
+                for link in instance.find_all('a'):
+                    if link.text in i_text:
+                        idx = i_text.index(link.text)
+                        i_text[idx] = colorama.Fore.BLUE + link.text + colorama.Style.RESET_ALL
+
+                if i_text:
+                    page += ' '.join(i_text) + "\n"
 
         if not os.path.exists(args.dir):
             os.mkdir(args.dir)
@@ -41,6 +48,7 @@ def display(url):
     print(page)
 
 
+colorama.init()
 history = []
 while True:
     cmd = input()
