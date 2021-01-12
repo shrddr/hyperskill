@@ -42,33 +42,42 @@ args = argparser.parse_args()
 
 content = {'nytimes.com': nytimes_com, 'bloomberg.com': bloomberg_com}
 
+
+def display(url):
+    if url in content:
+        filename = url[:dot_position]
+        filepath = os.path.join(args.dir, filename)
+
+        if os.path.exists(filepath):
+            with open(filepath) as f:
+                page = f.read()
+        else:
+            page = content[url]
+            if not os.path.exists(args.dir):
+                os.mkdir(args.dir)
+            if not os.path.isdir(args.dir):
+                print("Error: dir exists but is not a dir")
+            with open(filepath, 'w') as f:
+                f.write(page)
+
+        print(page)
+    else:
+        print("Error: unknown url")
+
+
+history = []
 while True:
     cmd = input()
     if cmd == "exit":
         break
 
+    if cmd == "back":
+        if len(history) >= 2:
+            display(history[-2])
+
     dot_position = cmd.find('.')
     if dot_position >= 0:
-        url = cmd
-        if url in content:
-            filename = url[:dot_position]
-            filepath = os.path.join(args.dir, filename)
-            
-            if os.path.exists(filepath):
-                with open(filepath) as f:
-                    page = f.read(page)
-                    print(page)
-            else:
-                page = content[url]
-                print(page)
-
-                if not os.path.exists(args.dir):
-                    os.mkdir(args.dir)
-                if not os.path.isdir(args.dir):
-                    print("Error: dir exists but is not a dir")
-                with open(filepath, 'w') as f:
-                    f.write(page)
-        else:
-            print("Error: unknown url")
+        display(cmd)
+        history.append(cmd)
     else:
         print('Error: no dot')
