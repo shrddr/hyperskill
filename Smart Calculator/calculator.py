@@ -2,81 +2,156 @@ class InvalidExpression(Exception):
     pass
 
 
-def try_int(s):
-    try:
-        return int(s)
-    except ValueError:
-        return None
+class InvalidIdentifier(Exception):
+    pass
 
 
-class Expr:
-    def __init__(self):
-        self.arg = None
-        self.op = None
+class UnknownIdentifier(Exception):
+    pass
 
-    def complete(self):
-        return self.arg is not None and self.op is not None
 
-    def compute(self, left):
-        if self.op == '+':
-            return left + self.arg
-        if self.op == '-':
-            return left - self.arg
+ops = ['*', '/', '+', '-', '(', ')']
+priorities = {'+': 0, '-': 0, '*': 1, '/': 1}
 
-    def parse_op(self, c):
-        if self.op is None:
-            self.op = c
-        else:
-            if c == '-':
-                self.op = '-' if self.op == '+' else '+'
 
-    def parse_arg(self, i):
-        if self.arg is None:
-            self.arg = i
+def tokenize(str):
+    tokens = []
+    token = ''
+    for c in str:
+        if not c.strip():
+            continue
+        if c in ops:
+            if token:
+                tokens.append(token)
+            token = c
+        elif c.isalpha():
+            if token:
+                if token.isalpha():
+                    token += c
+                else:
+                    tokens.append(token)
+                    token = c
+            else:
+                token = c
+        elif c.isdigit():
+            if token:
+                if token.isdigit():
+                    token += c
+                else:
+                    tokens.append(token)
+                    token = c
+            else:
+                token = c
+
         else:
             raise InvalidExpression
+    if token:
+        tokens.append(token)
 
-    def parse(self, s):
-        i = try_int(s)
-        if i is None:
-            for c in s:
-                if c in ['-', '+']:
-                    self.parse_op(c)
-                else:
-                    raise InvalidExpression
+    return tokens
 
+
+def to_postfix(tokens):
+    polish = []
+    stack = []
+    for t in tokens:
+        if t.isalpha():
+            if t not in vars:
+                raise UnknownIdentifier
+            x = vars[t]
+            polish.append(x)
+        elif t.isdigit():
+            x = int(t)
+            polish.append(x)
+        elif t in priorities:
+            while stack and stack[-1] in priorities and priorities[t] <= priorities[stack[-1]]:
+                polish.append(stack.pop())
+            stack.append(t)
+        elif t == '(':
+            stack.append(t)
+        elif t == ')':
+            while stack and stack[-1] != '(':
+                polish.append(stack.pop())
+            if stack and stack[-1] == '(':
+                stack.pop()
+            else:
+                raise InvalidExpression
+
+    while stack:
+        op = stack.pop()
+        if op in ['(', ')']:
+            raise InvalidExpression
+        polish.append(op)
+
+    return polish
+
+
+def eval_postfix(polish):
+    stack = []
+    for t in polish:
+        if type(t) == int:
+            stack.append(t)
         else:
-            self.parse_arg(i)
+            arg1 = stack.pop()
+            arg2 = stack.pop()
+            if t == '+':
+                x = arg2 + arg1
+            elif t == '-':
+                x = arg2 - arg1
+            elif t == '*':
+                x = arg2 * arg1
+            elif t == '/':
+                x = arg2 // arg1
+            else:
+                raise NotImplementedError
+            stack.append(x)
+    return stack.pop()
 
 
+def eval_expression(line):
+    tokens = tokenize(line)
+    polish = to_postfix(tokens)
+    res = eval_postfix(polish)
+    return res
+
+
+vars = {}
 while True:
-    line = input()
+    line = input().strip()
+
     if len(line) and line[0] == '/':
         if line == '/exit':
             print('Bye!')
             break
         elif line == '/help':
-            print('The program calculates the +- of numbers')
+            print('The program calculates the +-*/() of numbers')
             continue
         else:
             print('Unknown command')
             continue
 
-    args = line.split()
-    res = None
-    e = Expr()
     try:
-        for s in args:
-            if res is None:
-                res = int(s)
-                continue
-            e.parse(s)
-            if e.complete():
-                res = e.compute(res)
-                e = Expr()
-        if res is not None:
-            print(res)
+        if not line:
+            continue
+        eq_pos = line.find("=")
+        if eq_pos > -1:
+            # definition
+            var = line[:eq_pos].strip()
+            if not var.isalpha():
+                raise InvalidIdentifier
+            res = eval_expression(line[eq_pos + 1:])
+            vars[var] = res
+        else:
+            res = eval_expression(line)
+            if res is not None:
+                print(res)
 
-    except (ValueError, InvalidExpression):
+    except (ValueError, IndexError, InvalidExpression):
         print('Invalid expression')
+        continue
+    except InvalidIdentifier:
+        print('Invalid Identifier')
+        continue
+    except UnknownIdentifier:
+        print('Unknown Identifier')
         continue
